@@ -5,6 +5,8 @@ import random
 from lxml import etree
 from bs4 import BeautifulSoup
 import re
+from pymongo import MongoClient
+from pymongo.results import InsertOneResult
 
 ua_list = [
     "Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko)Chrome/57.0.2987.133 Safari/537.36",
@@ -45,11 +47,12 @@ def crawl(html):
     for tr in trs:
         ui = []
         ele = tr.select('td')
-        ss = list(ele[0].stripped_strings), list(ele[1].stripped_strings),list(ele[2].stripped_strings),list(ele[3].stripped_strings),list(ele[4].stripped_strings)
+        ss = list(ele[0].stripped_strings), list(ele[1].stripped_strings), list(ele[2].stripped_strings), list(
+            ele[3].stripped_strings), list(ele[4].stripped_strings)
         ulist.append(ss)
     return ulist
 
-        # ulist.append(ui)
+    # ulist.append(ui)
     # return ulist
 
 
@@ -66,27 +69,63 @@ def crawl(html):
 #         sslist.append(ss)
 #     return sslist
 
-def styles(ulist:list):
+def styles(ulist: list):
     """
     换成一个列表表示一行
     :param ulist:
     :return:
     """
+    sse = []
     for i in ulist:
         u_list = []
         for j in i:
             ss = ''.join(j)
             u_list.append(ss)
-        print(u_list)
+        # print(u_list)
+        sse.append(u_list)
+    return sse[1:]
     # return stru_list
 
+
 def save_content(styles):
-    print(type(styles))
-    for i in range(len(styles)):
-        print(styles[i])
+    """
+    转字典存入MOngoDB
+    :param styles:
+    :return:
+    """
+    client = MongoClient('mongodb://172.22.142.234:27017')  # 客户端连接
+    db = client['school']  # 指定数据库
+    schools = db.schol
+    for i in styles:
+        ss = {
+            "名次": i[0],
+            "学校名称": i[1],
+            "星级排名": i[2],
+            "办学层次": i[3],
+            "总分": i[4]
+        }
+        x: InsertOneResult = schools.insert_one(ss)  # 一条条插入数据库
+        print(x.inserted_id)
+
+
+def save_mogodu():
+    """
+    连接测试MongoDB
+    :return:
+    """
+    client = MongoClient('mongodb://172.22.142.234:27017')  # 客户端连接
+    db = client['school']  # 指定数据库
+    schools = db.schol  # 集合
+    print(schools)
+    user1 = {'id': '1', 'name': 'ben', 'age': 20}
+    x: InsertOneResult = schools.insert_one(user1)
+    print(type(x), x)
+    print(x.inserted_id)
 
 
 if __name__ == '__main__':
     html = get_html(url)
     content = crawl(html)
-    styles(content)
+    styles = styles(content)
+    save_content(styles)
+    # save_mogodu()
